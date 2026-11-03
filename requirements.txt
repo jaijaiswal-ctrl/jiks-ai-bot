@@ -1,0 +1,7 @@
+ollama
+SpeechRecognition
+pynput
+duckduckgo-search
+openai-whisper
+pyaudio
+numpy

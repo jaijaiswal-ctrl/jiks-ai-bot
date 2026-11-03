@@ -1,6 +1,26 @@
-#!/bin/bash
-brew install ffmpeg portaudio
-python3 -m venv venv
-source venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
+# 1. Go to project folder and activate environment
+cd ~/Documents/LocalBot && source venv/bin/activate
+
+# 2. Install the AI brain connector
+pip install ollama
+
+# 3. DOWNLOAD THE ACTUAL AI BRAIN (Llama 3.1)
+ollama pull llama3.1
+
+# 4. Install the basic voice recognition framework
+pip install SpeechRecognition
+
+# 5. Install the keyboard controller (for TAB and ESC keys)
+pip install pynput
+
+# 6. Install the real-time web search tool
+pip install duckduckgo-search
+
+# 7. Install the high-accuracy offline voice brain
+pip install openai-whisper
+
+# 8. Install the microphone hardware connector
+pip install pyaudio
+
+# 9. Install the math library for voice volume processing
+pip install numpy

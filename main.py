@@ -11,25 +11,23 @@ import queue
 from pynput import keyboard
 from duckduckgo_search import DDGS
 
-# ================= CONFIGURATION =================
 MODEL = "llama3.1"         
 VOICE_EN = "Tara"           
 VOICE_HI = "Lekha"          
 KNOWLEDGE_FILE = "knowledge.txt" 
 WHISPER_MODEL_SIZE = "base" 
-BOT_NAME = "jiks" # <--- YOUR BOT'S NAME
-# =================================================
+BOT_NAME = "jiks" 
 
 trigger_voice = False
 voice_queue = queue.Queue()
 current_voice_process = None 
 
-print(f"⏳ Loading {BOT_NAME}'s Voice Brain...")
+print(f"Loading {BOT_NAME}...")
 try:
     whisper_model = whisper.load_model(WHISPER_MODEL_SIZE)
-    print(f"✅ {BOT_NAME} is ready!")
+    print("Ready!")
 except Exception as e:
-    print(f"❌ Error loading Whisper: {e}")
+    print(f"Whisper error: {e}")
 
 def is_hindi(text):
     for char in text:
@@ -41,10 +39,10 @@ def voice_worker():
     while True:
         text = voice_queue.get()
         if text is None: break
-        current_voice = VOICE_HI if is_hindi(text) else VOICE_EN
+        voice = VOICE_HI if is_hindi(text) else VOICE_EN
         clean_text = text.replace('\n', ' ')
         try:
-            current_voice_process = subprocess.Popen(['say', '-v', current_voice, clean_text])
+            current_voice_process = subprocess.Popen(['say', '-v', voice, clean_text])
             current_voice_process.wait()
         except Exception: pass
         finally: voice_queue.task_done()
@@ -87,46 +85,42 @@ def listen():
     stop_voice()
     time.sleep(0.3) 
     CHUNK, FORMAT, CHANNELS, RATE = 1024, pyaudio.paInt16, 1, 16000
-    SILENCE_THRESHOLD, SILENCE_DURATION = 1000, 2.0 
+    T_LIMIT, DURATION = 600, 2.0 
     p = pyaudio.PyAudio()
-    stream = p.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
-    print("\n🎤 Listening... (Waiting 2s after you stop)")
-    frames, silent_chunks = [], 0
-    silent_limit = int(SILENCE_DURATION * RATE / CHUNK)
     try:
+        stream = p.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
+        print("\n🎤 Listening...")
+        frames, silent_chunks = [], 0
+        limit = int(DURATION * RATE / CHUNK)
         while True:
             data = stream.read(CHUNK, exception_on_overflow=False)
             frames.append(data)
             audio_data = np.frombuffer(data, dtype=np.int16)
-            if np.sqrt(np.mean(audio_data**2)) < SILENCE_THRESHOLD:
+            if np.mean(np.abs(audio_data)) < T_LIMIT:
                 silent_chunks += 1
             else:
                 silent_chunks = 0 
-            if silent_chunks > silent_limit or len(frames) > (RATE / CHUNK * 15):
+            if silent_chunks > limit or len(frames) > (RATE / CHUNK * 15):
                 break
-    except Exception: return None
-    finally:
         stream.stop_stream()
         stream.close()
         p.terminate()
-    temp_file = "temp_rec.wav"
-    try:
-        wf = wave.open(temp_file, 'wb')
-        wf.setnchannels(CHANNELS)
-        wf.setsampwidth(pyaudio.get_sample_size(FORMAT))
-        wf.setframerate(RATE)
-        wf.writeframes(b''.join(frames))
-        wf.close()
+        temp_file = "temp_rec.wav"
+        with wave.open(temp_file, 'wb') as wf:
+            wf.setnchannels(CHANNELS)
+            wf.setsampwidth(pyaudio.get_sample_size(FORMAT))
+            wf.setframerate(RATE)
+            wf.writeframes(b''.join(frames))
         result = whisper_model.transcribe(temp_file, fp16=False)
         text = result['text'].strip()
+        if os.path.exists(temp_file): os.remove(temp_file)
         if text:
             print(f"You: {text}")
             return text
         print("❌ No speech detected.")
         return None
-    except Exception: return None
-    finally:
-        if os.path.exists(temp_file): os.remove(temp_file)
+    except Exception:
+        return None
 
 def on_press(key):
     global trigger_voice
@@ -138,20 +132,12 @@ def on_press(key):
 def process_response(user_text):
     stop_voice()
     try:
-        local_data = get_local_knowledge()
-        web_data = get_realtime_data(user_text)
-        # SYSTEM PROMPT UPDATED WITH NAME "jiks"
-        system_instructions = (
-            f"Your name is {BOT_NAME}. You are a sophisticated assistant from the year 2026. "
-            "RULES: Be concise. Respond in the user's language. No translations. "
-            "Never mention you are an AI. Be natural and confident."
-        )
-        full_prompt = f"LOCAL:\n{local_data}\n\nWEB:\n{web_data}\n\nQUESTION: {user_text}"
+        local = get_local_knowledge()
+        web = get_realtime_data(user_text)
+        sys_msg = f"Your name is {BOT_NAME}. You are a helpful assistant from 2026. Be concise and natural."
+        prompt = f"LOCAL:\n{local}\n\nWEB:\n{web}\n\nUSER: {user_text}"
         print("\nBot: ", end="", flush=True)
-        response = ollama.chat(model=MODEL, messages=[
-            {'role': 'system', 'content': system_instructions}, 
-            {'role': 'user', 'content': full_prompt}
-        ], stream=True)
+        response = ollama.chat(model=MODEL, messages=[{'role': 'system', 'content': sys_msg}, {'role': 'user', 'content': prompt}], stream=True)
         sentence = ""
         for chunk in response:
             content = chunk['message']['content']
@@ -162,23 +148,11 @@ def process_response(user_text):
                 sentence = ""
         if sentence: speak_chunk(sentence)
         print()
-    except Exception as e:
-        print(f"Error: {e}")
+    except Exception as e: print(f"Error: {e}")
 
-def final_execute():
+def run():
     global trigger_voice
-    print("\n" + "="*60)
-    print(f"🚀 {BOT_NAME.upper()} HYBRID AI ACTIVE")
-    print(f"🧠 Model: {MODEL} | 🔊 Voices: {VOICE_EN}/{VOICE_HI}")
-    print("="*60)
-    l = keyboard.Listener(on_press=on_//press) # Fixing typo below
-    
-def run_fixed():
-    global trigger_voice
-    print("\n" + "="*60)
-    print(f"🚀 {BOT_NAME.upper()} HYBRID AI ACTIVE")
-    print(f"🧠 Model: {MODEL} | 🔊 Voices: {VOICE_EN}/{VOICE_HI}")
-    print("="*60)
+    print(f"\n🚀 {BOT_NAME.upper()} ACTIVE")
     l = keyboard.Listener(on_press=on_press)
     l.start()
     try:
@@ -192,13 +166,13 @@ def run_fixed():
                 process_response(u)
             elif trigger_voice or u == "":
                 trigger_voice = False 
-                v_text = listen()
-                if v_text:
-                    if v_text.lower() in ['quit', 'exit', 'stop']:
+                v = listen()
+                if v:
+                    if v.lower() in ['quit', 'exit', 'stop']:
                         os.system(f'say -v "{VOICE_EN}" "Goodbye!"')
                         break
-                    process_response(v_text)
+                    process_response(v)
     except: pass
 
 if __name__ == "__main__":
-    run_fixed()
+    run()

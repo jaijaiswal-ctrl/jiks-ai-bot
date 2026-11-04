@@ -1,4 +1,2 @@
-# 🧠 Knowledge Base
-Open `knowledge.txt` and add facts in plain text.
-**Example:** "The Tensor School Of Cs And Ai a futuristic AI school."
-The bot will prioritize this data over the internet.
+# Local Knowledge
+Add information to `knowledge.txt` in plain text. The bot will use this as a primary source of truth before searching the web.

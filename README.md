@@ -1,33 +1,26 @@
-# 🚀 jiks - The Omega-2026 Hybrid AI Assistant
+# jiks
 
-jiks is a high-performance, local-first AI voice assistant for macOS. It combines a smart LLM brain with real-time web searching and 100% offline voice processing.
+jiks is a local voice assistant for macOS that uses Llama 3.1 and OpenAI Whisper to allow for natural, offline conversations. It uses a hybrid approach, combining a local knowledge base with real-time web search to provide accurate and current answers.
 
----
+## Features
+- **Offline Voice Recognition:** Powered by Whisper for high-accuracy speech-to-text without needing the internet.
+- **Local LLM:** Uses Llama 3.1 via Ollama for private, local processing.
+- **Multilingual:** Supports both English and Hindi with automatic voice switching.
+- **Hybrid Memory:** Uses a local `knowledge.txt` file for personal data and DuckDuckGo for real-time web info.
+- **Low Latency:** Implements streaming output to reduce the gap between the question and the answer.
 
-## 🛠️ Technical Architecture
+## Getting Started
 
-### 🧠 The Brain
-- **Model:** `Llama 3.1` via Ollama.
-- **Personality:** Omega-2026 (Confident, futuristic, and natural).
-- **Knowledge:** Hybrid RAG (Local `knowledge.txt` + Live Web Search).
+### Prerequisites
+- Install [Ollama](https://ollama.com) and pull the model: `ollama run llama3.1`
+- Install Homebrew: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+- Install system dependencies: `brew install ffmpeg portaudio`
 
-### 🎤 The Ear (Offline)
-- **Engine:** `OpenAI Whisper` (Base Model).
-- **Feature:** 100% Offline speech-to-text with Voice Activity Detection (VAD) to prevent cutting off the user.
-
-### 🔊 The Voice
-- **Engine:** macOS Native `say` command.
-- **Multilingual:** Dynamic switching between English (**Tara**) and Hindi (**Lekha**).
-- **Flow:** Streaming Voice Queue for seamless, non-overlapping speech.
-
----
-
-## ⚙️ Installation Guide
-
-### 1. System Prerequisites
-Install **Homebrew**, then run:
-```bash
-brew install ffmpeg portaudio
+### Installation
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/jaijaiswal-ctrl/jiks-ai-bot.git
+   cd jiks-ai-bot
 
 # Clone the repository
 git clone https://github.com/jaijaiswal-ctrl/jiks-ai-bot.git
